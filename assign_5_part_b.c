@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX_PHOTO_COMBOS 39
+#define MAX_PHOTOS 20
+
 struct Link
 {
   int src;
@@ -8,9 +11,63 @@ struct Link
   int weight;
 };
 
+int qsortCompare(const void* a, const void* b);                                 // qsort comparision function
+int disjointFind(int x, int *photoSet);                                         // Implementation of the find2 operation of Disjoint DS
+int disjointUnion(int representativeX, int representativeY, int *photoSet, int *photoSetHeight);  // Implementation of the Union3 operation of Disjoint DS
+
+int qsortCompare(const void* a, const void* b)
+{
+  struct Link* x = (struct Link*)a;
+  struct Link* y = (struct Link*)b;
+  return x->weight < y->weight;
+}
+
+int disjointFind (int x, int *photoSet)
+{
+  int representative = 0;
+  representative = x;
+
+  while (representative != photoSet[representative])
+  {
+    representative = photoSet[representative];
+  }
+
+  return representative;
+}
+
+int disjointUnion (int representativeX, int representativeY, int *photoSet, int *photoSetHeight)
+{
+  if (photoSetHeight[representativeX] == photoSetHeight[representativeY])
+  {
+    photoSetHeight[representativeX]++;
+    photoSet[representativeY] = representativeX;
+  }
+  else
+  {
+    if (photoSetHeight[representativeX] > photoSetHeight[representativeY])
+    {
+      photoSet[representativeY] = representativeX;
+    }
+    else
+    {
+      photoSet[representativeX] = representativeY;
+    }
+  }
+}
+
 int main (int argc, char *argv[])
 {
-  struct Link photoLink[40];
+  struct Link photoLink[MAX_PHOTO_COMBOS], resultPhotoSet[MAX_PHOTO_COMBOS];
+  int photoSet[MAX_PHOTOS] = {0};                   // Disjoint Data set for the photos
+  int photoSetHeight[MAX_PHOTOS] = {0};             // Height maintained for the photosets
+  int i=0;
+  int ucomp, vcomp;
+
+  for (i = 0; i < MAX_PHOTOS; i++)                  // Result photo set to be empty and default all photos as individual sets
+  {
+    photoSet[i] = i;
+    resultPhotoSet[i].src = 0; resultPhotoSet[i].dest = 0; resultPhotoSet[i].weight = 0;
+  }
 
   photoLink[0].src = 1; photoLink[0].dest = 2; photoLink[0].weight = 80;
   photoLink[1].src = 5; photoLink[1].dest = 9; photoLink[1].weight = 73;
@@ -52,6 +109,38 @@ int main (int argc, char *argv[])
   photoLink[37].src = 17; photoLink[37].dest = 10; photoLink[37].weight = 56;
   photoLink[38].src = 19; photoLink[38].dest = 15; photoLink[38].weight = 71;
 
-  printf("Hello\n");
+  qsort(&photoLink[0], MAX_PHOTO_COMBOS, sizeof(photoLink[0]), qsortCompare);         // Sort in decreasing order
+
+  printf("After Sorting:\n");
+  for (i = 0; i < MAX_PHOTO_COMBOS; i++)
+  {
+    printf("(%d, %d) = %d\n", photoLink[i].src, photoLink[i].dest, photoLink[i].weight);
+  }
+
+  printf("*********************************\n");
+
+  for (i = 0; i < MAX_PHOTO_COMBOS; i++)
+  {
+    ucomp = disjointFind(photoLink[i].src, &photoSet[0]);
+    vcomp = disjointFind(photoLink[i].dest, &photoSet[0]);
+
+    printf("ucomp=%d vcomp=%d\n", ucomp, vcomp);
+
+    if (ucomp != vcomp)       // If not in same set, add them
+    {
+      printf("YES, Union this points: %d & %d\n", ucomp, vcomp);
+      if (photoLink[i].weight > 50)                                             // Only if matching value is above 50, should not matter even if we remove
+      {
+        disjointUnion(ucomp, vcomp, &photoSet[0], &photoSetHeight[0]);
+      }
+    }
+  }
+
+  printf("RESULT::\n [ ");
+  for (i = 0; i < MAX_PHOTOS; i++)                  // Result photo set to be empty and default all photos as individual sets
+  {
+    printf("%d, ", photoSet[i]+1);
+  }
+  printf("]\n");
   return 0;
 }
