@@ -4,8 +4,11 @@
 #define MAX_PHOTO_COMBOS 39
 #define MAX_PHOTOS 20
 #define MAX_PHOTO_CATEGORIES 3
+#define MAX_DEFAULT_VAL 9999
 
-struct Link
+#define ENABLE_DEBUG 0              // Enable or disable debugs
+
+struct Link                                                                     // Stucture to represet the given Photo combos
 {
   int photoSrc;
   int photoDest;
@@ -20,10 +23,10 @@ int qsortCompare(const void* a, const void* b)
 {
   struct Link* x = (struct Link*)a;
   struct Link* y = (struct Link*)b;
-  return x->photoSimilarity < y->photoSimilarity;
+  return x->photoSimilarity < y->photoSimilarity;                               // Sort in decreasing order
 }
 
-int disjointFind (int x, int *photoSet)
+int disjointFind (int x, int *photoSet)                                         // find2 operation explained in class
 {
   int representative = 0;
   representative = x;
@@ -36,7 +39,7 @@ int disjointFind (int x, int *photoSet)
   return representative;
 }
 
-int disjointUnion (int representativeX, int representativeY, int *photoSet, int *photoSetHeight)
+int disjointUnion (int representativeX, int representativeY, int *photoSet, int *photoSetHeight)    // Union3 operation explained in class
 {
   if (photoSetHeight[representativeX] == photoSetHeight[representativeY])
   {
@@ -64,10 +67,12 @@ int main (int argc, char *argv[])
   int photoSet[MAX_PHOTOS] = {0};                   // Disjoint Data set for the photos
   int photoSetHeight[MAX_PHOTOS] = {0};             // Height maintained for the photosets
   int i=0, j=0;
+  int intitialControlFlag[MAX_PHOTO_CATEGORIES] = {0};        // To save major representatives for different categories
+  int k = 0,l = 0,m = 0;
   int ucomp, vcomp;
   int representatives[MAX_PHOTO_CATEGORIES];        // Array to store root representative for each category
   int photoSetCategory[MAX_PHOTO_CATEGORIES][MAX_PHOTOS];                       // Resulting Photo Categories and photos in those categories
-  int tempRepresentative[MAX_PHOTO_CATEGORIES] = {9999};  // Initialize with default
+  int tempRepresentative[MAX_PHOTO_CATEGORIES] = {MAX_DEFAULT_VAL};  // Initialize with default
 
   for (i = 0; i < MAX_PHOTOS; i++)                  // Result photo set to be empty and default all photos as individual sets
   {
@@ -77,13 +82,14 @@ int main (int argc, char *argv[])
 
   for (i = 0; i < MAX_PHOTO_CATEGORIES; i++)                  // Result photo set to be empty and default all photos as individual sets
   {
-    representatives[i] = 9999;                                // Set default representative
+    representatives[i] = MAX_DEFAULT_VAL;                                // Set default representative
     for (j = 0; j < MAX_PHOTOS; j++)
     {
-      photoSetCategory[i][j] = 9999;                          // Set default value
+      photoSetCategory[i][j] = MAX_DEFAULT_VAL;                          // Set default value
     }
   }
 
+  // Load the given data
   photoLink[0].photoSrc = 1; photoLink[0].photoDest = 2; photoLink[0].photoSimilarity = 80;
   photoLink[1].photoSrc = 5; photoLink[1].photoDest = 9; photoLink[1].photoSimilarity = 73;
   photoLink[2].photoSrc = 9; photoLink[2].photoDest = 13; photoLink[2].photoSimilarity = 69;
@@ -126,25 +132,25 @@ int main (int argc, char *argv[])
 
   qsort(&photoLink[0], MAX_PHOTO_COMBOS, sizeof(photoLink[0]), qsortCompare);         // Sort in decreasing order
 
+#if ENABLE_DEBUG
   printf("After Sorting:\n");
   for (i = 0; i < MAX_PHOTO_COMBOS; i++)
   {
     printf("(%d, %d) = %d\n", photoLink[i].photoSrc, photoLink[i].photoDest, photoLink[i].photoSimilarity);
   }
-
-  printf("*********************************\n");
+#endif
 
   for (i = 0; i < MAX_PHOTO_COMBOS; i++)
   {
-    printf("Checking: photoSrc=%d photoDest=%d\n", photoLink[i].photoSrc-1, photoLink[i].photoDest-1);
     ucomp = disjointFind(photoLink[i].photoSrc-1, &photoSet[0]);                // Photo number starts from 1 to 20, let's make it 0 to 19
     vcomp = disjointFind(photoLink[i].photoDest-1, &photoSet[0]);               // Photo number starts from 1 to 20, let's make it 0 to 19
 
+#if ENABLE_DEBUG
     printf("ucomp=%d vcomp=%d\n", ucomp, vcomp);
+#endif
 
     if (ucomp != vcomp)                                                         // If not in same set, add them
     {
-      printf("YES, Union this points: %d & %d\n", ucomp, vcomp);
       if (photoLink[i].photoSimilarity >= 50)                                   // Only if matching value is above 50, should not matter even if we remove
       {
         disjointUnion(ucomp, vcomp, &photoSet[0], &photoSetHeight[0]);
@@ -152,19 +158,18 @@ int main (int argc, char *argv[])
     }
   }
 
-  printf("PHOTOSET::\n [ ");
+#if ENABLE_DEBUG
+  printf("PHOTOSET:\n [ ");
   for (i = 0; i < MAX_PHOTOS; i++)                                               // Result photo set to be empty and default all photos as individual sets
   {
     printf("%d -> %d, ", i+1, photoSet[i]+1);
   }
-  printf("]\n");
+  printf("]\n\nResult:\n");
+#endif
 
-  printf("RESULT::\n");
-  int intitialControlFlag[MAX_PHOTO_CATEGORIES] = {0};
-  int k = 0,l = 0,m = 0;
   for (i = 0; i < MAX_PHOTOS; i++)                                               // Categories the photos differently based on their representative root
   {
-    if (intitialControlFlag[0] == 0)
+    if (intitialControlFlag[0] == 0)                                            // Load the first category's representative
     {
       tempRepresentative[0] = disjointFind(i, &photoSet[0]);
       intitialControlFlag[0] = 1;
@@ -172,27 +177,27 @@ int main (int argc, char *argv[])
 
     if (tempRepresentative[0] != disjointFind(i, &photoSet[0]))
     {
-      if (intitialControlFlag[1] == 0)
+      if (intitialControlFlag[1] == 0)                                          // Load the second category's representative
       {
         tempRepresentative[1] = disjointFind(i, &photoSet[0]);
         intitialControlFlag[1] = 1;
       }
-      else if (intitialControlFlag[2] == 0)
+      else if (intitialControlFlag[2] == 0)                                     // Load the third category's representative
       {
         tempRepresentative[2] = disjointFind(i, &photoSet[0]);
         intitialControlFlag[2] = 1;
       }
     }
 
-    if (tempRepresentative[0] == disjointFind(i, &photoSet[0]))
+    if (tempRepresentative[0] == disjointFind(i, &photoSet[0]))                 // Photo belongs to first category
     {
       photoSetCategory[0][k++] = i;
     }
-    else if (tempRepresentative[1] == disjointFind(i, &photoSet[0]))
+    else if (tempRepresentative[1] == disjointFind(i, &photoSet[0]))            // Photo belongs to second category
     {
       photoSetCategory[1][l++] = i;
     }
-    else
+    else                                                                        // Photo belongs to third category
     {
       photoSetCategory[2][m++] = i;
     }
@@ -200,10 +205,10 @@ int main (int argc, char *argv[])
 
   for (i = 0; i < MAX_PHOTO_CATEGORIES; i++)                                               // Result photo set to be empty and default all photos as individual sets
   {
-    printf("\ncategory-%d: ", i+1);
+    printf("category-%d: ", i+1);
     for (j = 0; j < MAX_PHOTOS; j++)
     {
-      if (photoSetCategory[i][j] != 9999)
+      if (photoSetCategory[i][j] != MAX_DEFAULT_VAL)
       {
         printf(" P%d", photoSetCategory[i][j]+1);
       }
@@ -212,8 +217,7 @@ int main (int argc, char *argv[])
         break;
       }
     }
-    printf(" And Total Photos: %d\n", j);
+    printf(" && Total Photos: %d\n", j);
   }
-  printf("\n");
   return 0;
 }
